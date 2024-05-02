@@ -146,4 +146,4 @@ class Calci {
     public static double sec(double angle) {
         return 1.0 / Math.cos(angle);
     }
-
+// integration
