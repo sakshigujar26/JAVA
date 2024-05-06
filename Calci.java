@@ -261,5 +261,6 @@ public static double[][] addMatrices(double[][] matrix1, double[][] matrix2) {
         }
         return result;
     }
-
-
+public static void main (String[] args){
+// calling of functionlity
+}
