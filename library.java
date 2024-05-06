@@ -49,6 +49,11 @@ class Book {
         this.available = available;
     }
 }
+class BookNotFoundException extends RuntimeException {
+    public BookNotFoundException(String message) {
+        super(message);
+    }
+}
 
 class Staff extends User {
     public void borrowBook(Book book) {
@@ -65,15 +70,20 @@ class Staff extends User {
         System.out.println("Book " + book.getTitle() + " returned successfully.");
     }
 
-    public void addBook(Scanner scanner) {
-        System.out.println("Enter book title:");
-        String title = scanner.nextLine();
+    public void addBook(Scanner scanner, Book[] books, int numBooks) {
+        if (numBooks < books.length) {
+            System.out.println("Enter book title:");
+            String title = scanner.nextLine();
 
-        System.out.println("Enter book author:");
-        String author = scanner.nextLine();
+            System.out.println("Enter book author:");
+            String author = scanner.nextLine();
 
-        Book newBook = new Book(title, author);
-        System.out.println("Book " + newBook.getTitle() + " added successfully.");
+            Book newBook = new Book(title, author);
+            books[numBooks++] = newBook;
+            System.out.println("Book " + newBook.getTitle() + " added successfully.");
+        } else {
+            System.out.println("Maximum number of books reached.");
+        }
     }
 
     public void borrowBookWithInput(Scanner scanner, Book book) {
@@ -86,16 +96,6 @@ class Staff extends User {
         returnBook(book);
     }
 
-    public void addBookWithInput(Scanner scanner) {
-        System.out.println("Enter book title:");
-        String title = scanner.nextLine();
-
-        System.out.println("Enter book author:");
-        String author = scanner.nextLine();
-
-        Book newBook = new Book(title, author);
-        System.out.println("Book " + newBook.getTitle() + " added successfully.");
-    }
 }
 
 class Student extends User {
@@ -125,45 +125,93 @@ class Student extends User {
 }
 
 class Librarian extends User {
-    public void addBook(Scanner scanner) {
+    public void addBook(Scanner scanner, Book[] books, int numBooks) {
+        if (numBooks < books.length) {
+            System.out.println("Enter book title:");
+            String title = scanner.nextLine();
+
+            System.out.println("Enter book author:");
+            String author = scanner.nextLine();
+
+            Book newBook = new Book(title, author);
+            books[numBooks++] = newBook;
+            System.out.println("Book " + newBook.getTitle() + " added successfully.");
+        } else {
+            System.out.println("Maximum number of books reached.");
+        }
+    }
+
+    public void issueBook(Scanner scanner, Book[] books, int numBooks, Student student) {
         System.out.println("Enter book title:");
         String title = scanner.nextLine();
-
         System.out.println("Enter book author:");
         String author = scanner.nextLine();
 
-        Book newBook = new Book(title, author);
-        System.out.println("Book " + newBook.getTitle() + " added successfully.");
-    }
-
-    public void issueBook(Scanner scanner, Book book, Student student) {
-        if (book.isAvailable()) {
-            book.setAvailable(false);
-            System.out.println("Book " + book.getTitle() + " issued to student");
+        Book bookToIssue = findBookByTitleAndAuthor(books, numBooks, title, author);
+        if (bookToIssue != null) {
+            if (bookToIssue.isAvailable()) {
+                bookToIssue.setAvailable(false);
+                System.out.println("Book " + bookToIssue.getTitle() + " issued to student");
+            } else {
+                System.out.println("Book " + bookToIssue.getTitle() + " is not available.");
+            }
         } else {
-            System.out.println("Book " + book.getTitle() + " is not available.");
+            throw new BookNotFoundException("Book not found.");
         }
     }
 
-    public void checkAvailability(Book book) {
-        if (book.isAvailable()) {
-            System.out.println("Book " + book.getTitle() + " is available.");
+    private Book findBookByTitleAndAuthor(Book[] books, int numBooks, String title, String author) {
+        for (int i = 0; i < numBooks; i++) {
+            if (books[i].getTitle().equals(title) && books[i].getAuthor().equals(author)) {
+                return books[i];
+            }
+        }
+        return null;
+    }
+
+    public void checkAvailability(Scanner scanner, Book[] books, int numBooks) {
+        System.out.println("Enter book title:");
+        String title = scanner.nextLine();
+        System.out.println("Enter book author:");
+        String author = scanner.nextLine();
+
+        Book bookToCheck = findBookByTitleAndAuthor(books, numBooks, title, author);
+        if (bookToCheck != null) {
+            if (bookToCheck.isAvailable()) {
+                System.out.println("Book " + bookToCheck.getTitle() + " is available.");
+            } else {
+                System.out.println("Book " + bookToCheck.getTitle() + " is not available.");
+            }
         } else {
-            System.out.println("Book " + book.getTitle() + " is not available.");
+            throw new BookNotFoundException("Book not found.");
         }
     }
 
-    public void renewBook(Book book) {
-        if (!book.isAvailable()) {
-            book.setAvailable(true);
-            System.out.println("Book " + book.getTitle() + " renewed successfully.");
+    public void renewBook(Scanner scanner, Book[] books, int numBooks) {
+        System.out.println("Enter book title:");
+        String title = scanner.nextLine();
+        System.out.println("Enter book author:");
+        String author = scanner.nextLine();
+
+        Book bookToRenew = findBookByTitleAndAuthor(books, numBooks, title, author);
+        if (bookToRenew != null) {
+            if (!bookToRenew.isAvailable()) {
+                bookToRenew.setAvailable(true);
+                System.out.println("Book " + bookToRenew.getTitle() + " renewed successfully.");
+            } else {
+                System.out.println("Book " + bookToRenew.getTitle() + " is already available.");
+            }
         } else {
-            System.out.println("Book " + book.getTitle() + " is already available.");
+            throw new BookNotFoundException("Book not found.");
         }
     }
 }
 
 class LibraryManagementSystem {
+    private static final int MAX_BOOKS = 100; // Maximum number of books
+    private static Book[] books = new Book[MAX_BOOKS];
+    private static int numBooks = 0; // Number of books currently stored
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
@@ -201,28 +249,17 @@ class LibraryManagementSystem {
 
                         switch (librarianOption) {
                             case 1:
-                                librarian.addBook(scanner);
+                                librarian.addBook(scanner, books, numBooks);
+                                numBooks++;
                                 break;
                             case 2:
-                                System.out.println("Enter book title:");
-                                String titleIssue = scanner.nextLine();
-                                System.out.println("Enter book author:");
-                                String authorIssue = scanner.nextLine();
-                                librarian.issueBook(scanner, new Book(titleIssue, authorIssue), student);
+                                librarian.issueBook(scanner, books, numBooks, student);
                                 break;
                             case 3:
-                                System.out.println("Enter book title:");
-                                String titleCheck = scanner.nextLine();
-                                System.out.println("Enter book author:");
-                                String authorCheck = scanner.nextLine();
-                                librarian.checkAvailability(new Book(titleCheck, authorCheck));
+                                librarian.checkAvailability(scanner, books, numBooks);
                                 break;
                             case 4:
-                                System.out.println("Enter book title:");
-                                String titleRenew = scanner.nextLine();
-                                System.out.println("Enter book author:");
-                                String authorRenew = scanner.nextLine();
-                                librarian.renewBook(new Book(titleRenew, authorRenew));
+                                librarian.renewBook(scanner, books, numBooks);
                                 break;
                             default:
                                 System.out.println("Invalid option. Please try again.");
